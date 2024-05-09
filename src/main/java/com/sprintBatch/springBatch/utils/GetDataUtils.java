@@ -7,6 +7,7 @@ import com.sprintBatch.springBatch.dto.MovieResponseDto;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,24 +23,35 @@ public class GetDataUtils {
             .build();
 
     public List<MovieDto> getMovieListData() {
-        MovieResponseDto responseDto = get();
+        List<MovieDto> totalMovieList = new ArrayList<>();
 
-        List<MovieDto> movieList = responseDto.movieListResult().movieList().stream()
-                .map(movie -> {
-                    List<String> directorList = movie.directors().stream().map(MovieResponseDto.MovieListResult.Movie.Directors::peopleNm).toList();
-                    MovieDto movieDto = mapper.convertValue(movie, MovieDto.class);
-                    movieDto.setDirectorList(directorList);
-                    return movieDto;
-                })
-                .toList();
+        for(int page=0; page<=1; page++){
+            MovieResponseDto responseDto = get(page);
+            if (responseDto.movieListResult() == null) {
+                System.out.println(page);
+                continue;
+            }
 
-        return movieList;
+            List<MovieDto> movieList = responseDto.movieListResult().movieList().stream()
+                    .map(movie -> {
+                        List<String> directorList = movie.directors().stream().map(MovieResponseDto.MovieListResult.Movie.Directors::peopleNm).toList();
+                        MovieDto movieDto = mapper.convertValue(movie, MovieDto.class);
+                        movieDto.setDirectorList(directorList);
+                        return movieDto;
+                    })
+                    .toList();
+
+            totalMovieList.addAll(movieList);
+        }
+
+        return totalMovieList;
     }
 
-    public MovieResponseDto get() {
+    public MovieResponseDto get(Integer page) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/searchMovieList.json")
                         .queryParam("key", clientKey)
+                        .queryParam("curPage", page)
                         .build())
                 .retrieve()
                 .bodyToMono(MovieResponseDto.class)

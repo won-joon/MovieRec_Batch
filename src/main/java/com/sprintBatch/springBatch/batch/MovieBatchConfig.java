@@ -5,6 +5,7 @@ import com.sprintBatch.springBatch.domain.Movie;
 import com.sprintBatch.springBatch.domain.MovieDirector;
 import com.sprintBatch.springBatch.dto.MovieDto;
 import com.sprintBatch.springBatch.repository.DirectorRepository;
+import com.sprintBatch.springBatch.repository.MovieRepository;
 import com.sprintBatch.springBatch.utils.GetDataUtils;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Configuration
 @Slf4j
@@ -39,11 +41,15 @@ public class MovieBatchConfig {
     @Autowired
     private DirectorRepository directorRepository;
 
+    @Autowired
+    private MovieRepository movieRepository;
+
 
     @Bean
     public Job myJob(JobRepository jobRepository, Step step) {
-        return new JobBuilder("myJob3", jobRepository)
+        return new JobBuilder("myJob", jobRepository)
                 .start(step)
+                .incrementer(new RunIdIncrementer())
                 .build();
     }
 
@@ -60,19 +66,34 @@ public class MovieBatchConfig {
     @Bean
     public ItemReader<MovieDto> itemReader() {
         List<MovieDto> movieDtoList = getDataUtils.getMovieListData();
-        return new ListItemReader<>(movieDtoList);
+        List<MovieDto> movieList = new ArrayList<>();
+        for(MovieDto movieDto : movieDtoList){  // 영화 데이터 중복 처리
+            Optional<Movie> movie = movieRepository.findByMovieCd(movieDto.getMovieCd());
+            if(movie.isEmpty()){
+                movieList.add(movieDto);
+            }
+        }
+
+        return new ListItemReader<>(movieList);
     }
 
     @Bean
     public ItemProcessor<MovieDto, Movie> itemProcessor() {
+        log.info("배포 진행중");
         return item -> {
-            log.info("~~~~~~~~~~~~~~~ 배치 프로세스 진행중!!!");
             Movie movie = item.toEntity();
             if (item.getDirectorList() != null) {
                 for (String directorName : item.getDirectorList()) {
-                    Director director = directorRepository.save(Director.builder().name(directorName).build());
+                    Optional<Director> existingDirector = directorRepository.findByName(directorName);
                     MovieDirector movieDirector = new MovieDirector();
-                    movieDirector.setDirector(director);
+
+                    if(existingDirector.isPresent()){  // 중복 감독 처리
+                        movieDirector.setDirector(existingDirector.get());
+                    }else{
+                        Director director = directorRepository.save(Director.builder().name(directorName).build());
+                        movieDirector.setDirector(director);
+                    }
+
                     movie.addDirector(movieDirector);
                 }
             }

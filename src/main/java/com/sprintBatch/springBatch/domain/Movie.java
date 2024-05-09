@@ -17,24 +17,24 @@ import java.util.List;
 public class Movie {
 
     @Id
-    private String movie_cd;
+    private String movieCd;
 
-    private String movie_nm;
+    private String movieNm;
 
-    private String genre_alt;
+    private String genreAlt;
 
-    private String open_dt;
+    private String openDt;
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL)
     private List<MovieDirector> director_list = new ArrayList<>();
 
 
     @Builder
-    public Movie(String movie_cd, String movie_nm, String genre_alt, String open_dt){
-        this.movie_cd = movie_cd;
-        this.movie_nm = movie_nm;
-        this.genre_alt = genre_alt;
-        this.open_dt = open_dt;
+    public Movie(String movieCd, String movieNm, String genreAlt, String openDt){
+        this.movieCd = movieCd;
+        this.movieNm = movieNm;
+        this.genreAlt = genreAlt;
+        this.openDt = openDt;
     }
 
     public void addDirector(MovieDirector movieDirector) {

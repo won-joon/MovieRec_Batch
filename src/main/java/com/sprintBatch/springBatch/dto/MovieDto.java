@@ -26,10 +26,10 @@ public class MovieDto {
     public Movie toEntity(){
         // Movie 객체를 생성하고 반환하는 로직
         return Movie.builder()
-                .movie_cd(movieCd)
-                .movie_nm(movieNm)
-                .genre_alt(genreAlt)
-                .open_dt(openDt)
+                .movieCd(movieCd)
+                .movieNm(movieNm)
+                .genreAlt(genreAlt)
+                .openDt(openDt)
                 .build();
     }
 }
